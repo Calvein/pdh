@@ -1,0 +1,6 @@
+{
+  "name": "pdh",
+  "builds": [
+    { "src": "index.js", "use": "@now/node" }
+  ]
+}
