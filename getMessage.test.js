@@ -87,7 +87,7 @@ test('pdh api', async () => {
     }
   })
   message = await getMessage('xxx')
-  expect(message).toBe('à *Nantes* de 22h05 ☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ à 23h05')
+  expect(message).toBe('à *Nantes* de 22h05 ☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️ à 23h05\nVous êtes tranquille 😎')
 
   // Data rain
   axios.get.mockImplementation((url) => {

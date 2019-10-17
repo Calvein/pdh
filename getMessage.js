@@ -42,6 +42,8 @@ module.exports = async (text) => {
   let message = `à *${cityData.nom}* de ${startTime} ${emojis} à ${endTime}`
   if (hasRain) {
     message += '\nPrévoyez un parapluie ☂️'
+  } else {
+    message += '\nVous êtes tranquille 😎'
   }
 
   return message

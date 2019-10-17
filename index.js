@@ -3,10 +3,11 @@ const { parse } = require('querystring')
 const getMessage = require('./getMessage')
 
 module.exports = async (req, res) => {
-  const body = parse(await text(req)).text
+  let body = req.query.text || JSON.parse(req.body).text
+
   if (!body) {
-    res.writeHead(400, { 'Content-Type': 'application/json' })
-    return res.end({ "error": "missing `text` parameter"})
+    res.writeHead(400, { 'content-type': 'application/json' })
+    return res.end(JSON.stringify({ "error": "missing `text` parameter"}))
   }
 
   const message = await getMessage(body)
