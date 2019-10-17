@@ -1,5 +1,3 @@
-const { text } = require('micro')
-const { parse } = require('querystring')
 const getMessage = require('./getMessage')
 
 module.exports = async (req, res) => {
