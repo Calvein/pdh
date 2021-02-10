@@ -1,45 +1,40 @@
 const axios = require('axios')
 
-const CITY_URL = 'https://geo.api.gouv.fr/communes'
-const WEATHER_URL = 'http://www.meteofrance.com/mf3-rpc-portlet/rest/pluie/'
 const CODES = ['❌', '☀️', '☔', '🌧️', '⛈️']
+
+const getGeocodeUrl = (query) =>
+  `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
+    query
+  )}.json?access_token=pk.eyJ1IjoiY2FsdmVpbiIsImEiOiJjZG5Td3FrIn0.u79_D5NDJMxg6TTmGoMlfA`
+const getRainUrl = (lat, lon) =>
+  `https://rpcache-aa.meteofrance.com/internet2018client/2.0/nowcast/rain?token=__Wj7dVSTjV9YGu1guveLyDq0g7S7TfTjaHBTPTpO0kj8__&lat=${lat}&lon=${lon}`
 
 const formatTime = (time) => time.toString().padStart(2, 0)
 const formatDate = (date) =>
   `${formatTime(date.getHours())}h${formatTime(date.getMinutes())}`
 
-module.exports = async (text) => {
-  const queryParam = /^\d{5}$/.test(text) ? 'codePostal' : 'nom'
-  const errorName = queryParam === 'codePostal' ? 'code postal' : 'nom'
-  const cityData = (await axios.get(CITY_URL, {
-    params: {
-      fields: 'nom,code',
-      [queryParam]: text,
-    },
-  })).data[0]
-  if (!cityData) {
-    return `Il n'y a pas de ville existante avec le ${errorName} *${text}* 😔`
+module.exports = async (query) => {
+  const geocodedData = (await axios.get(getGeocodeUrl(query))).data
+  if (!geocodedData.features || geocodedData.features.length === 0) {
+    return `Il n'y a pas de résultats pour *${query}* 😔`
   }
 
-  // The API requires an additional 0 at the end of the INSEE code
-  const { data } = await axios.get(WEATHER_URL + cityData.code + '0')
-  if (!data.hasData) {
-    return `Il n'y a pas de données pour la ville avec le ${errorName} *${text}* 😔\nVous pouvez voir la couverture sur <http://www.meteofrance.com/previsions-meteo-france/previsions-pluie|le site de Météo france>`
+  const place = geocodedData.features[0]
+  const [lon, lat] = place.center
+  const { data } = await axios.get(getRainUrl(lat, lon))
+  if (!data.properties) {
+    return `Il n'y a pas de données pour la recherche *${query}* 😔\nVous pouvez voir la couverture sur <https://meteofrance.com/|le site de Météo france>`
   }
-  const date = new Date(
-    data.echeance.replace(
-      /(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})/,
-      '$1-$2-$3T$4:$5'
-    )
-  )
-  const startTime = formatDate(date)
-  date.setHours(date.getHours() + 1)
-  const endTime = formatDate(date)
 
-  const hasRain = data.dataCadran.some((d) => d.niveauPluie > 1)
-  const emojis = data.dataCadran.map((d) => CODES[d.niveauPluie]).join('')
+  const { forecast } = data.properties
 
-  let message = `à *${cityData.nom}* de ${startTime} ${emojis} à ${endTime}`
+  const startTime = formatDate(new Date(forecast[0].time))
+  const endTime = formatDate(new Date(forecast[forecast.length - 1].time))
+
+  const hasRain = forecast.some((d) => d.rain_intensity > 1)
+  const emojis = forecast.map((d) => CODES[d.rain_intensity]).join('')
+
+  let message = `à *${place.text}* de ${startTime} ${emojis} à ${endTime}`
   if (hasRain) {
     message += '\nPrévoyez un parapluie ☂️'
   } else {
